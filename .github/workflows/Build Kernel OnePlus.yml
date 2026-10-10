@@ -6,8 +6,9 @@ on:
         type: choice
         description: "配置文件//Configuration file"
         required: true
-        default: oneplus_15
+        default: oneplus_11_t
         options:
+          - oneplus_11_t
           - oneplus_nord_n30_se_5g_v
           - oneplus_10r_v
           - oneplus_nord_3_b
@@ -78,7 +79,7 @@ on:
         type: choice
         description: "内核模块实现方式//Kernel module implementation method"
         required: true
-        default: N/A
+        default: KPN
         options:
           - KPM
           - KPN
@@ -97,12 +98,12 @@ on:
         type: string
         description: "自定义构建时间(输入F使用UTCT或-1关闭)//Custom build time (Enter F to use UTCT, or -1 to disable)"
         required: false
-        default: "Wed Jul 15 11:18:49 UTC 2026"
+        default: "Tue Jun 20 11:26:50 UTC 2023"
       KSU_META:
         type: string
         description: "管理器分支名(必填)/内置分支名(必填)/自定义版本标识(留空不修改)/回退分支提交哈希版本(留空不修改)//Manager Branch name (Required) / Builtin branch name (Required) / Custom version identifier (Leave blank to not modify) / Rollback branch commit hash version (Leave blank to not modify)"
         required: false
-        default: "main/main/Numbersf/"
+        default: "main/main//"
       LZ4_UPDATE:
         type: boolean
         description: "是否升级LZ4到上游最新？//Upgrade LZ4 to the latest upstream?"
@@ -117,7 +118,7 @@ on:
         type: string
         description: "自定义内核后缀(不输入使用RAND_STR或-1关闭)//Custom kernel suffix (Leave blank to use RAND_STR, or -1 to disable)"
         required: false
-        default: ""
+        default: "8-o-gaa4c29b7e680"
       RESUBLEVEL:
         description: "自定义内核等级欺骗(SUBLEVEL)//Custom kernel SUBLEVEL spoofing"
         required: false
@@ -131,22 +132,22 @@ on:
         type: boolean
         description: "是否启用关键分区写入保护模块(BBG)？//Enable critical partition write protection module (BBG)?"
         required: true
-        default: true
+        default: false
       NETFILTER:
         type: boolean
         description: "是否启用网络功能拓展(NETFILTER)？//Enable network feature extensions (NETFILTER)?"
         required: true
-        default: true
+        default: false
       CCM:
         type: boolean
         description: "是否启用网络拥塞控制与管理机制(BBRv1+BBRv3+ECN)？//Enable network congestion control and management mechanism (BBRv1+BBRv3+ECN)?"
         required: true
-        default: true
+        default: false
       UNICODE_BYPASS:
         type: boolean
         description: "是否添加Unicode不可见字码点绕过读取漏洞修复？//Add patch for Unicode invisible code point read bypass vulnerability?"
         required: true
-        default: false
+        default: true
       SCHED_HMBIRD:
         type: boolean
         description: "是否添加风驰驱动1.0？//Add Fengchi (HMBIRD) Driver 1.0?"
@@ -208,7 +209,7 @@ jobs:
           git config --global user.name "Numbersf"
           git config --global user.email "263623064@qq.com"
           mkdir kernel_workspace && cd kernel_workspace
-          git clone https://github.com/Numbersf/Action-Build.git -b BakaSU
+          git clone https://github.com/${{ github.repository }}.git -b ${{ github.ref_name }} Action-Build
 
       - name: Extract Manifest Info
         id: extract_info
