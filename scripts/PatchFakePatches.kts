@@ -246,6 +246,51 @@ fun applyPostPatchFixups() {
                 logPostfix(taskMmu, "inserted a no-op static inline stub 'void __fold_filemap_fixup_entry(struct vma_iterator *iter, unsigned long *end) { }' after the last #include, because page_size_compat.h is missing or doesn't declare this symbol on this baseline")
             }
         }
+
+        val content3 = taskMmu.readText()
+        if ((content3.contains("SUSFS_IS_INODE_SUS_MAP") || content3.contains("SUSFS_IS_INODE_OPEN_REDIRECT")) &&
+            !content3.contains("<linux/susfs_def.h>")
+        ) {
+            val lines = taskMmu.readLines().toMutableList()
+            val lastIncludeIdx = lines.indexOfLast { it.trimStart().startsWith("#include") }
+            val insertAt = if (lastIncludeIdx >= 0) lastIncludeIdx + 1 else 1
+            lines.addAll(
+                insertAt,
+                listOf(
+                    "#if defined(CONFIG_KSU_SUSFS_SUS_KSTAT) || defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)",
+                    "#include <linux/susfs_def.h>",
+                    "#endif"
+                )
+            )
+            taskMmu.writeText(lines.joinToString("\n") + "\n")
+            logPostfix(taskMmu, "inserted #include <linux/susfs_def.h> to resolve implicit declaration of SUSFS_IS_INODE_*")
+        }
+    }
+
+    val namespace = f("fs/namespace.c")
+    if (namespace.exists()) {
+        val content = namespace.readText()
+        if (content.contains("VFSMOUNT_MNT_FLAGS_KSU_UNSHARED_MNT") && !content.contains("<linux/susfs_def.h>")) {
+            val lines = namespace.readLines().toMutableList()
+            val lastIncludeIdx = lines.indexOfLast { it.trimStart().startsWith("#include") }
+            val insertAt = if (lastIncludeIdx >= 0) lastIncludeIdx + 1 else 1
+            lines.addAll(
+                insertAt,
+                listOf(
+                    "#ifdef CONFIG_KSU_SUSFS",
+                    "#include <linux/susfs_def.h>",
+                    "#endif",
+                    "",
+                    "#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT",
+                    "extern bool susfs_is_current_ksu_domain(void);",
+                    "extern struct static_key_true susfs_is_sdcard_android_data_not_decrypted;",
+                    "#define CL_COPY_MNT_NS BIT(25)",
+                    "#endif"
+                )
+            )
+            namespace.writeText(lines.joinToString("\n") + "\n")
+            logPostfix(namespace, "inserted #include <linux/susfs_def.h> and susfs extern declarations in fs/namespace.c")
+        }
     }
 
     if (kmi == "android12-5.10" || kmi == "android13-5.10") {
