@@ -681,11 +681,11 @@ jobs:
             echo "KSU_CUSTOM_TAG=$KSU_CUSTOM_TAG" >> "$GITHUB_ENV"
           fi
           if [[ -n "$MANUAL_HASH" ]]; then
-            git fetch origin "$KSU_BUILTIN_BRANCH" --depth=50
+            git fetch --unshallow || git fetch origin "$KSU_BUILTIN_BRANCH" --depth=200 || true
             git checkout "$MANUAL_HASH"
           fi
 
-          KSU_VERSION=$(expr $(git rev-list --count "$KSU_MANAGER_BRANCH" 2>/dev/null || echo 13000) + 30700)
+          KSU_VERSION=$(expr $(git rev-list --count HEAD 2>/dev/null || echo 13000) + 30700)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
 
           # 消除 BakaSU 上游人为阻断构建的 error 指令 (commit 48fa4bb7)
