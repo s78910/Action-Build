@@ -687,6 +687,13 @@ jobs:
 
           KSU_VERSION=$(expr $(git rev-list --count "$KSU_MANAGER_BRANCH" 2>/dev/null || echo 13000) + 30700)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+
+          # 消除 BakaSU 上游人为阻断构建的 error 指令 (commit 48fa4bb7)
+          if [[ -f "kernel/tools/susfs_compat.mk" ]]; then
+            sed -i '/Please wait susfs update/d' kernel/tools/susfs_compat.mk || true
+            sed -i '/susfs has NOT update/d' kernel/tools/susfs_compat.mk || true
+          fi
+
           if [ "$FAST_BUILD" = "false" ]; then
             KSU_SRC="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/KernelSU/kernel"
             if [[ -f "$KSU_SRC/Kbuild" ]]; then
