@@ -2,18 +2,6 @@ name: Build OnePlus Multi-Device Matrix (v35218)
 run-name: OnePlus Multi-Matrix Build (v35218)
 on:
   workflow_dispatch:
-    inputs:
-      TARGET_GROUP:
-        description: "选择编译机型组//Target Group"
-        type: choice
-        default: "ALL_DEVICES"
-        options:
-          - "ALL_DEVICES"
-          - "ONEPLUS_11"
-          - "ACE_2"
-          - "ACE_2_PRO"
-          - "ACE_3"
-          - "ACE_PRO"
 jobs:
   build:
     strategy:
@@ -70,7 +58,6 @@ jobs:
           - file: oneplus_ace_pro_v
             group: ACE_PRO
             name: "Ace Pro (Android 15)"
-    if: ${{ github.event.inputs.TARGET_GROUP == 'ALL_DEVICES' || matrix.group == github.event.inputs.TARGET_GROUP }}
     name: ${{ matrix.name }} [v35218+SuSFS]
     runs-on: ubuntu-latest
     env:
