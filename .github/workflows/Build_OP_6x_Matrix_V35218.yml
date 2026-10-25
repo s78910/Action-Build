@@ -238,7 +238,7 @@ jobs:
       - name: 准备编译环境与工具链
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends binutils python-is-python3 libssl-dev libelf-dev aria2 zip unzip ccache gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+          sudo apt-get install -y --no-install-recommends binutils python-is-python3 libssl-dev libelf-dev zlib1g-dev pkg-config aria2 zip unzip ccache gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
           
           mkdir -p workspace
           cd workspace
@@ -281,6 +281,10 @@ jobs:
           for f in common/scripts/setlocalversion; do
             [ -f "$f" ] && sed -i 's/ -dirty//g' "$f"
           done
+          
+          # 修复部分机型 (如 Ace 3 Pro A15) 缺失 oplus_resctrl/Kconfig 导致的配置中断
+          mkdir -p common/drivers/soc/oplus/oplus_resctrl
+          touch common/drivers/soc/oplus/oplus_resctrl/Kconfig
 
       - name: 注入 BakaSU 与 Unicode 零宽漏洞防护
         run: |
@@ -370,6 +374,9 @@ jobs:
           echo "CONFIG_TMPFS_POSIX_ACL=y" >> arch/arm64/configs/gki_defconfig
           echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> arch/arm64/configs/gki_defconfig
           echo "CONFIG_HEADERS_INSTALL=n" >> arch/arm64/configs/gki_defconfig
+          # 禁用 BTF 调试信息，避免 6.12 resolve_btfids 链接中断
+          echo "CONFIG_DEBUG_INFO_BTF=n" >> arch/arm64/configs/gki_defconfig
+          sed -i 's/CONFIG_DEBUG_INFO_BTF=y/CONFIG_DEBUG_INFO_BTF=n/g' arch/arm64/configs/gki_defconfig 2>/dev/null || true
           
           # 禁用 defconfig 严格校验
           [ -f build.config.gki ] && sed -i 's/check_defconfig//' build.config.gki || true
