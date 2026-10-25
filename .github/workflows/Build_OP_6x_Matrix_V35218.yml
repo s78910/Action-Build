@@ -1,0 +1,414 @@
+name: Build OnePlus 6.x Matrix (Qualcomm + Dimensity A15/A16 Pure)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ksu_type:
+        description: 'KernelSU 分支 (默认 BakaSU)'
+        required: true
+        type: choice
+        default: 'bakasu'
+        options:
+          - 'bakasu'
+          - 'sukisu'
+          - 'none'
+      susfs_enable:
+        description: '是否启用 SuSFS v2.3.0 深度隐藏支持'
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  matrix_build:
+    name: ${{ matrix.device }}_${{ matrix.android_ver }}(${{ matrix.kernel_ver }}) [${{ matrix.chip }}]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # --- 6.1 高通 SM8650 系列 (A15 & A16 双版本) ---
+          - device: OnePlus12
+            android_ver: Android15
+            kernel_ver: '6.1'
+            sub_ver: '118'
+            repo: cctv18/android_kernel_common_oneplus_sm8650
+            branch: oneplus/sm8650_v_15.0.0_oneplus12_6.1.118
+            toolchain: LLVM-Clang20-r547379
+            clang_pkg: clang-r547379.zip
+            susfs_branch: oki-android14-6.1
+            chip: SM8650
+
+          - device: OnePlus12
+            android_ver: Android16
+            kernel_ver: '6.1'
+            sub_ver: '141'
+            repo: cctv18/android_kernel_common_oneplus_sm8650
+            branch: oneplus/sm8650_b_16.0.0_oneplus12_6.1.141
+            toolchain: LLVM-Clang20-r547379
+            clang_pkg: clang-r547379.zip
+            susfs_branch: oki-android14-6.1
+            chip: SM8650
+
+          - device: OnePlusAce3Pro
+            android_ver: Android15
+            kernel_ver: '6.1'
+            sub_ver: '118'
+            repo: cctv18/android_kernel_common_oneplus_sm8650
+            branch: oneplus/sm8650_v_15.0.0_ace_3_pro
+            toolchain: LLVM-Clang20-r547379
+            clang_pkg: clang-r547379.zip
+            susfs_branch: oki-android14-6.1
+            chip: SM8650
+
+          - device: OnePlusAce3Pro
+            android_ver: Android16
+            kernel_ver: '6.1'
+            sub_ver: '141'
+            repo: cctv18/android_kernel_common_oneplus_sm8650
+            branch: oneplus/sm8650_b_16.0.0_oneplus12_6.1.141
+            toolchain: LLVM-Clang20-r547379
+            clang_pkg: clang-r547379.zip
+            susfs_branch: oki-android14-6.1
+            chip: SM8650
+
+          - device: OnePlusAce5
+            android_ver: Android15
+            kernel_ver: '6.1'
+            sub_ver: '118'
+            repo: cctv18/android_kernel_common_oneplus_sm8650
+            branch: oneplus/sm8650_v_15.0.0_oneplus_ace5
+            toolchain: LLVM-Clang20-r547379
+            clang_pkg: clang-r547379.zip
+            susfs_branch: oki-android14-6.1
+            chip: SM8650
+
+          - device: OnePlusAce5
+            android_ver: Android16
+            kernel_ver: '6.1'
+            sub_ver: '141'
+            repo: cctv18/android_kernel_common_oneplus_sm8650
+            branch: oneplus/sm8650_b_16.0.0_oneplus12_6.1.141
+            toolchain: LLVM-Clang20-r547379
+            clang_pkg: clang-r547379.zip
+            susfs_branch: oki-android14-6.1
+            chip: SM8650
+
+          # --- 6.1 天玑 MT6989 / 9300 系列 (A15 & A16 双版本) ---
+          - device: OnePlusAce5Race
+            android_ver: Android15
+            kernel_ver: '6.1'
+            sub_ver: 'mt6989'
+            repo: cctv18/android_kernel_oneplus_mt6989
+            branch: oneplus/mt6989_v_15.0.2_ace5_race
+            toolchain: LLVM-Clang18-r510928
+            clang_pkg: clang-r510928.zip
+            susfs_branch: oki-android14-6.1
+            chip: MT6989
+
+          - device: OnePlusAce5Race
+            android_ver: Android16
+            kernel_ver: '6.1'
+            sub_ver: 'mt6989'
+            repo: cctv18/android_kernel_oneplus_mt6989
+            branch: oneplus/mt6989_b_16.0.0_ace5_race
+            toolchain: LLVM-Clang18-r510928
+            clang_pkg: clang-r510928.zip
+            susfs_branch: oki-android14-6.1
+            chip: MT6989
+
+          # --- 6.6 高通 SM8750 系列 (A15 & A16 双版本) ---
+          - device: OnePlus13
+            android_ver: Android15
+            kernel_ver: '6.6'
+            sub_ver: '66'
+            repo: cctv18/android_kernel_common_oneplus_sm8750
+            branch: oneplus/sm8750_v_15.0.0_oneplus_13
+            toolchain: LLVM-Clang18-r510928
+            clang_pkg: clang-r510928.zip
+            susfs_branch: oki-android15-6.6
+            chip: SM8750
+
+          - device: OnePlus13
+            android_ver: Android16
+            kernel_ver: '6.6'
+            sub_ver: '118'
+            repo: cctv18/android_kernel_common_oneplus_sm8750
+            branch: oneplus/sm8750_b_16.0.0_oneplus_13_6.6.118
+            toolchain: LLVM-Clang18-r510928
+            clang_pkg: clang-r510928.zip
+            susfs_branch: oki-android15-6.6
+            chip: SM8750
+
+          - device: OnePlusAce5Pro
+            android_ver: Android15
+            kernel_ver: '6.6'
+            sub_ver: '66'
+            repo: cctv18/android_kernel_common_oneplus_sm8750
+            branch: oneplus/sm8750_v_15.0.0_oneplus_ace5_pro
+            toolchain: LLVM-Clang18-r510928
+            clang_pkg: clang-r510928.zip
+            susfs_branch: oki-android15-6.6
+            chip: SM8750
+
+          - device: OnePlusAce5Pro
+            android_ver: Android16
+            kernel_ver: '6.6'
+            sub_ver: '118'
+            repo: cctv18/android_kernel_common_oneplus_sm8750
+            branch: oneplus/sm8750_b_16.0.0_oneplus_13_6.6.118
+            toolchain: LLVM-Clang18-r510928
+            clang_pkg: clang-r510928.zip
+            susfs_branch: oki-android15-6.6
+            chip: SM8750
+
+          - device: OnePlusAce6
+            android_ver: Android16
+            kernel_ver: '6.6'
+            sub_ver: '89'
+            repo: cctv18/android_kernel_common_oneplus_sm8750
+            branch: oneplus/sm8750_v_16.0.0_ace_6
+            toolchain: LLVM-Clang18-r510928
+            clang_pkg: clang-r510928.zip
+            susfs_branch: oki-android15-6.6
+            chip: SM8750
+
+          # --- 6.6 天玑 MT6991 / 9400 系列 (A15 & A16 双版本) ---
+          - device: OnePlusAce5Ultra
+            android_ver: Android15
+            kernel_ver: '6.6'
+            sub_ver: '89_mtk'
+            repo: cctv18/android_kernel_oneplus_mt6991
+            branch: oneplus/mt6991_v_15.0.2_ace5_ultra_6.6.89
+            toolchain: LLVM-Clang18-r510928
+            clang_pkg: clang-r510928.zip
+            susfs_branch: oki-android15-6.6
+            chip: MT6991
+
+          - device: OnePlusAce5Ultra
+            android_ver: Android16
+            kernel_ver: '6.6'
+            sub_ver: '89_mtk'
+            repo: cctv18/android_kernel_oneplus_mt6991
+            branch: oneplus/mt6991_b_16.0.0_oneplus_ace5_ultra
+            toolchain: LLVM-Clang18-r510928
+            clang_pkg: clang-r510928.zip
+            susfs_branch: oki-android15-6.6
+            chip: MT6991
+
+          # --- 6.12 高通 SM8845 系列 (一加 Ace 6T) ---
+          - device: OnePlusAce6T
+            android_ver: Android16
+            kernel_ver: '6.12'
+            sub_ver: 'sm8845'
+            repo: OnePlusOSS/android_kernel_common_oneplus_sm8845
+            branch: oneplus/sm8845_b_16.0.0_ace_6t
+            toolchain: LLVM-Clang20-r547379
+            clang_pkg: clang-r547379.zip
+            susfs_branch: oki-android16-6.12
+            chip: SM8845
+
+          # --- 6.12 高通 SM8850 系列 (一加 15 正统旗舰) ---
+          - device: OnePlus15
+            android_ver: Android16
+            kernel_ver: '6.12'
+            sub_ver: 'sm8850'
+            repo: cctv18/android_kernel_common_oneplus_sm8850
+            branch: oneplus/sm8850_v_16.0.0_oneplus_15
+            toolchain: LLVM-Clang20-r547379
+            clang_pkg: clang-r547379.zip
+            susfs_branch: oki-android16-6.12
+            chip: SM8850
+
+          # --- 6.12 天玑 MT6993 / 9500 系列 (一加 Ace 6 至尊版) ---
+          - device: OnePlusAce6Ultra
+            android_ver: Android16
+            kernel_ver: '6.12'
+            sub_ver: 'mt6993'
+            repo: cctv18/android_kernel_oneplus_mt6993
+            branch: oneplus/mt6993_b_16.0_ace_6_ultra
+            toolchain: LLVM-Clang20-r547379
+            clang_pkg: clang-r547379.zip
+            susfs_branch: oki-android16-6.12
+            chip: MT6993
+
+    steps:
+      - name: 检出当前工作流仓库
+        uses: actions/checkout@v4
+
+      - name: 准备编译环境与工具链
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends binutils python-is-python3 libssl-dev libelf-dev aria2 zip unzip ccache
+          
+          mkdir -p workspace
+          cd workspace
+          
+          echo "⬇️ 正在高速拉取内核源码 (分支: ${{ matrix.branch }})..."
+          aria2c -s16 -x16 -k1M "https://github.com/${{ matrix.repo }}/archive/refs/heads/${{ matrix.branch }}.zip" -o common.zip
+          unzip -q common.zip
+          SRC_DIR=$(ls -d */ | grep -v 'common' | head -n 1)
+          mv "$SRC_DIR" common
+          rm -f common.zip
+          
+          echo "⬇️ 正在下载官方构建工具链 (${{ matrix.toolchain }})..."
+          mkdir -p toolchain
+          aria2c -s16 -x16 -k1M "https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/${{ matrix.toolchain }}/${{ matrix.clang_pkg }}" -o clang.zip
+          unzip -q clang.zip -d toolchain
+          rm -f clang.zip
+          
+          mkdir -p build-tools
+          aria2c -s16 -x16 -k1M "https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/${{ matrix.toolchain }}/build-tools.zip" -o build-tools.zip
+          unzip -q build-tools.zip
+          rm -f build-tools.zip
+          
+          echo "🧹 去除 ABI 校验与 dirty 后缀..."
+          rm -f common/android/abi_gki_protected_exports_* || true
+          for f in common/scripts/setlocalversion; do
+            [ -f "$f" ] && sed -i 's/ -dirty//g' "$f"
+          done
+
+      - name: 注入 BakaSU 与 Unicode 零宽漏洞防护
+        run: |
+          cd workspace
+          if [ "${{ github.event.inputs.ksu_type }}" != "none" ]; then
+            echo "⚡ 正在注入最新 BakaSU (集成 Unicode 零宽字符过滤修复)..."
+            curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/refs/heads/main/kernel/setup.sh" | bash -s main
+            
+            # 标记纯净版防检测格式
+            echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%"' >> ./common/arch/arm64/configs/gki_defconfig
+            
+            cd KernelSU
+            KSU_VER=$(expr $(git rev-list --count main 2>/dev/null || echo 4518) + 30700)
+            echo "KSU_VER=$KSU_VER" >> $GITHUB_ENV
+            cd ..
+          else
+            echo "KSU_VER=0" >> $GITHUB_ENV
+          fi
+
+      - name: 注入 SuSFS v2.3.0 深度隐藏与时间侧信道防御
+        if: github.event.inputs.susfs_enable == 'true'
+        run: |
+          cd workspace
+          echo "🛡️ 正在注入 SuSFS v2.3.0 补丁 (分支: ${{ matrix.susfs_branch }})..."
+          git clone --depth=1 https://github.com/cctv18/susfs4oki.git -b ${{ matrix.susfs_branch }} susfs
+          
+          # 应用 susfs 基础补丁
+          PATCH_FILE=$(ls susfs/kernel_patches/50_add_susfs_in_gki-*.patch | head -n 1)
+          if [ -f "$PATCH_FILE" ]; then
+            cp "$PATCH_FILE" ./common/
+            cp -r susfs/kernel_patches/fs/* ./common/fs/ 2>/dev/null || true
+            cp -r susfs/kernel_patches/include/linux/* ./common/include/linux/ 2>/dev/null || true
+            cd ./common
+            patch -p1 -F 3 < $(basename "$PATCH_FILE") || true
+            cd ..
+          fi
+          
+          # 应用隐藏内存段补丁
+          if [ -f "${{ github.workspace }}/patches_6x/69_hide_stuff.patch" ]; then
+            cd ./common
+            patch -p1 -N -F 3 < "${{ github.workspace }}/patches_6x/69_hide_stuff.patch" || true
+            cd ..
+          fi
+          
+          # 针对特定内核大版本打入 CVE 补丁
+          if [ "${{ matrix.kernel_ver }}" == "6.1" ] && [ -f "${{ github.workspace }}/patches_6x/cve-2026-43499-rtmutex-6.1.patch" ]; then
+            cd ./common
+            patch -p1 -F 3 < "${{ github.workspace }}/patches_6x/cve-2026-43499-rtmutex-6.1.patch" || true
+            cd ..
+          elif [ "${{ matrix.kernel_ver }}" == "6.6" ] && [ -f "${{ github.workspace }}/patches_6x/cve-2026-43499-rtmutex-6.6.patch" ]; then
+            cd ./common
+            patch -p1 -F 3 < "${{ github.workspace }}/patches_6x/cve-2026-43499-rtmutex-6.6.patch" || true
+            cd ..
+          fi
+
+      - name: 写入纯净内核配置与防检测标记
+        run: |
+          cd workspace/common
+          
+          # 确保绝不包含 KPN / KPM
+          echo "CONFIG_KPM=n" >> arch/arm64/configs/gki_defconfig
+          
+          if [ "${{ github.event.inputs.ksu_type }}" != "none" ]; then
+            echo "CONFIG_KSU=y" >> arch/arm64/configs/gki_defconfig
+          fi
+          
+          if [ "${{ github.event.inputs.susfs_enable }}" == "true" ]; then
+            echo "CONFIG_KSU_SUSFS=y" >> arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> arch/arm64/configs/gki_defconfig
+          fi
+          
+          # 开启挂载增强与性能优化
+          echo "CONFIG_TMPFS_XATTR=y" >> arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TMPFS_POSIX_ACL=y" >> arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> arch/arm64/configs/gki_defconfig
+          echo "CONFIG_HEADERS_INSTALL=n" >> arch/arm64/configs/gki_defconfig
+          
+          # 禁用 defconfig 严格校验
+          [ -f build.config.gki ] && sed -i 's/check_defconfig//' build.config.gki || true
+
+      - name: 编译内核 Image
+        run: |
+          WORKDIR="${{ github.workspace }}/workspace"
+          export PATH="$WORKDIR/toolchain/bin:$WORKDIR/build-tools/bin:/usr/lib/ccache:$PATH"
+          
+          echo "🔍 编译器信息："
+          clang --version | head -n 1
+          ld.lld --version | head -n 1
+          
+          # 时间伪装环境注入 (防止编译时间戳泄露)
+          cd workspace/common
+          cp "${{ github.workspace }}/lib/libfakestat.so" ./ || true
+          cp "${{ github.workspace }}/lib/libfaketimeMT.so" ./ || true
+          chmod +x ./*.so || true
+          
+          export FAKESTAT="2025-05-25 12:00:00"
+          export FAKETIME="@2025-05-25 13:00:00"
+          
+          echo "🚀 开始构建 gki_defconfig..."
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD="ld.lld" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig
+          
+          echo "🚀 开始编译内核 Image..."
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD="ld.lld" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image
+          
+          if [ ! -f "out/arch/arm64/boot/Image" ]; then
+            echo "❌ 编译失败：未生成 Image 文件"
+            exit 1
+          fi
+          echo "✅ 内核 Image 编译完成！大小: $(du -h out/arch/arm64/boot/Image | awk '{print $1}')"
+
+      - name: 打包 AnyKernel3 刷机包 (纯净无 KPN/KPM)
+        run: |
+          cd workspace
+          git clone --depth=1 https://github.com/cctv18/AnyKernel3 AnyKernel3
+          rm -rf AnyKernel3/.git
+          
+          cp common/out/arch/arm64/boot/Image AnyKernel3/Image
+          
+          AK3_NAME="AnyKernel3_BakaSU_${KSU_VER}_${{ matrix.device }}_${{ matrix.android_ver }}(${{ matrix.kernel_ver }}.${{ matrix.sub_ver }}).zip"
+          echo "AK3_NAME=$AK3_NAME" >> $GITHUB_ENV
+          
+          cd AnyKernel3
+          zip -r "../$AK3_NAME" ./*
+          cd ..
+          
+          ls -lh "$AK3_NAME"
+
+      - name: 上传构建产物 (GitHub Actions Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.AK3_NAME }}
+          path: workspace/${{ env.AK3_NAME }}
+          if-no-files-found: error
