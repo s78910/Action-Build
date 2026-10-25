@@ -257,15 +257,22 @@ jobs:
           unzip -q clang.zip -d toolchain
           rm -f clang.zip
           
-          mkdir -p build-tools
           aria2c -s16 -x16 -k1M "https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/${{ matrix.toolchain }}/build-tools.zip" -o build-tools.zip
-          unzip -q build-tools.zip -d build-tools
+          unzip -q build-tools.zip
           rm -f build-tools.zip
           
-          CLANG_BIN=$(find "$PWD/toolchain" -type d -name bin | head -n 1)
-          BUILD_TOOLS_BIN=$(find "$PWD/build-tools" -type d -name bin | head -n 1)
-          if [ -z "$CLANG_BIN" ]; then CLANG_BIN="$PWD/toolchain/bin"; fi
-          if [ -z "$BUILD_TOOLS_BIN" ]; then BUILD_TOOLS_BIN="$PWD/build-tools/bin"; fi
+          if [ -f "$PWD/toolchain/bin/clang" ]; then
+            CLANG_BIN="$PWD/toolchain/bin"
+          else
+            CLANG_BIN=$(find "$PWD/toolchain" -maxdepth 3 -type f -name clang | head -n 1 | xargs dirname)
+          fi
+          
+          if [ -d "$PWD/build-tools/bin" ]; then
+            BUILD_TOOLS_BIN="$PWD/build-tools/bin"
+          else
+            BUILD_TOOLS_BIN=$(find "$PWD" -maxdepth 3 -type d -name bin | grep build-tools | head -n 1)
+          fi
+          
           echo "CLANG_BIN=$CLANG_BIN" >> $GITHUB_ENV
           echo "BUILD_TOOLS_BIN=$BUILD_TOOLS_BIN" >> $GITHUB_ENV
           
