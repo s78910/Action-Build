@@ -238,17 +238,18 @@ jobs:
       - name: 准备编译环境与工具链
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends binutils python-is-python3 libssl-dev libelf-dev aria2 zip unzip ccache
+          sudo apt-get install -y --no-install-recommends binutils python-is-python3 libssl-dev libelf-dev aria2 zip unzip ccache gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
           
           mkdir -p workspace
           cd workspace
           
           echo "⬇️ 正在高速拉取内核源码 (分支: ${{ matrix.branch }})..."
           aria2c -s16 -x16 -k1M "https://github.com/${{ matrix.repo }}/archive/refs/heads/${{ matrix.branch }}.zip" -o common.zip
-          unzip -q common.zip
-          SRC_DIR=$(ls -d */ | grep -v 'common' | head -n 1)
-          mv "$SRC_DIR" common
-          rm -f common.zip
+          mkdir -p src_tmp
+          unzip -q common.zip -d src_tmp
+          EXTRACTED_DIR=$(find src_tmp -mindepth 1 -maxdepth 1 -type d | head -n 1)
+          mv "$EXTRACTED_DIR" common
+          rm -rf src_tmp common.zip
           
           echo "⬇️ 正在下载官方构建工具链 (${{ matrix.toolchain }})..."
           mkdir -p toolchain
@@ -258,8 +259,13 @@ jobs:
           
           mkdir -p build-tools
           aria2c -s16 -x16 -k1M "https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/${{ matrix.toolchain }}/build-tools.zip" -o build-tools.zip
-          unzip -q build-tools.zip
+          unzip -q build-tools.zip -d build-tools
           rm -f build-tools.zip
+          
+          CLANG_BIN=$(find $(pwd)/toolchain -type f -name clang | head -n 1 | xargs dirname)
+          BUILD_TOOLS_BIN=$(find $(pwd)/build-tools -type f -name make -o -name flex | head -n 1 | xargs dirname)
+          echo "CLANG_BIN=$CLANG_BIN" >> $GITHUB_ENV
+          echo "BUILD_TOOLS_BIN=$BUILD_TOOLS_BIN" >> $GITHUB_ENV
           
           echo "🧹 去除 ABI 校验与 dirty 后缀..."
           rm -f common/android/abi_gki_protected_exports_* || true
@@ -290,14 +296,14 @@ jobs:
         run: |
           cd workspace
           echo "🛡️ 正在注入 SuSFS v2.3.0 补丁 (分支: ${{ matrix.susfs_branch }})..."
-          git clone --depth=1 https://github.com/cctv18/susfs4oki.git -b ${{ matrix.susfs_branch }} susfs
+          git clone --depth=1 https://github.com/cctv18/susfs4oki.git -b ${{ matrix.susfs_branch }} susfs4ksu
           
           # 应用 susfs 基础补丁
-          PATCH_FILE=$(ls susfs/kernel_patches/50_add_susfs_in_gki-*.patch | head -n 1)
-          if [ -f "$PATCH_FILE" ]; then
+          PATCH_FILE=$(find susfs4ksu/kernel_patches -name "50_add_susfs_in_gki-*.patch" | head -n 1)
+          if [ -n "$PATCH_FILE" ] && [ -f "$PATCH_FILE" ]; then
             cp "$PATCH_FILE" ./common/
-            cp -r susfs/kernel_patches/fs/* ./common/fs/ 2>/dev/null || true
-            cp -r susfs/kernel_patches/include/linux/* ./common/include/linux/ 2>/dev/null || true
+            cp -r susfs4ksu/kernel_patches/fs/* ./common/fs/ 2>/dev/null || true
+            cp -r susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/ 2>/dev/null || true
             cd ./common
             patch -p1 -F 3 < $(basename "$PATCH_FILE") || true
             cd ..
@@ -362,7 +368,7 @@ jobs:
       - name: 编译内核 Image
         run: |
           WORKDIR="${{ github.workspace }}/workspace"
-          export PATH="$WORKDIR/toolchain/bin:$WORKDIR/build-tools/bin:/usr/lib/ccache:$PATH"
+          export PATH="$CLANG_BIN:$BUILD_TOOLS_BIN:/usr/lib/ccache:$PATH"
           
           echo "🔍 编译器信息："
           clang --version | head -n 1
@@ -377,11 +383,25 @@ jobs:
           export FAKESTAT="2025-05-25 12:00:00"
           export FAKETIME="@2025-05-25 13:00:00"
           
+          echo '#!/bin/bash' > cc-wrapper
+          echo 'export LD_PRELOAD="'"$(pwd)/libfakestat.so $(pwd)/libfaketimeMT.so"'"' >> cc-wrapper
+          echo 'export FAKESTAT="'$FAKESTAT'"' >> cc-wrapper
+          echo 'export FAKETIME="'$FAKETIME'"' >> cc-wrapper
+          echo 'ccache clang "$@"' >> cc-wrapper
+          chmod +x cc-wrapper
+          
+          echo '#!/bin/bash' > ld-wrapper
+          echo 'export LD_PRELOAD="'"$(pwd)/libfakestat.so $(pwd)/libfaketimeMT.so"'"' >> ld-wrapper
+          echo 'export FAKESTAT="'$FAKESTAT'"' >> ld-wrapper
+          echo 'export FAKETIME="'$FAKETIME'"' >> ld-wrapper
+          echo 'ld.lld "$@"' >> ld-wrapper
+          chmod +x ld-wrapper
+          
           echo "🚀 开始构建 gki_defconfig..."
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD="ld.lld" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig
           
           echo "🚀 开始编译内核 Image..."
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD="ld.lld" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image
           
           if [ ! -f "out/arch/arm64/boot/Image" ]; then
             echo "❌ 编译失败：未生成 Image 文件"
