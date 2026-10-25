@@ -268,8 +268,8 @@ jobs:
           # 为 BakaSU 与 namespace.c 自动修复 SuSFS 关联符号与定义 (提供 fake_state 与 susfs_def.h 支持)
           python3 "${{ github.workspace }}/scripts/fix_susfs_bakasu.py" || true
           
-          # 应用隐藏内存段补丁
-          if [ -f "${{ github.workspace }}/patches_6x/69_hide_stuff.patch" ]; then
+          # 应用隐藏内存段补丁 (仅适用于 6.1 / 6.6，6.12 task_mmu.c 重构跳过避免冲突)
+          if [ "${{ matrix.kernel_ver }}" != "6.12" ] && [ -f "${{ github.workspace }}/patches_6x/69_hide_stuff.patch" ]; then
             cd ./common
             patch -p1 -N -F 3 < "${{ github.workspace }}/patches_6x/69_hide_stuff.patch" || true
             cd ..
