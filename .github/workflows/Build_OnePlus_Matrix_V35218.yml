@@ -64,7 +64,7 @@ jobs:
             group: ACE_PRO
             name: "Ace Pro (Android 15)"
     name: ${{ matrix.name }} [v35218+SuSFS]
-        runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
     env:
       CCACHE_COMPILERCHECK: "none"
       CCACHE_NOHASHDIR: "true"
