@@ -1,7 +1,12 @@
 name: Build OnePlus Multi-Device Matrix (v35218)
 run-name: OnePlus Multi-Matrix Build (v35218)
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      TARGET:
+        description: "Matrix Batch Trigger"
+        required: false
+        default: "ALL"
 jobs:
   build:
     strategy:
