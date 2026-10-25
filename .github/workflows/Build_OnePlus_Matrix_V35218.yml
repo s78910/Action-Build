@@ -915,6 +915,8 @@ jobs:
           rm -rf drivers/soc/oplus/storage
           mkdir -p drivers/soc/oplus/storage
           touch drivers/soc/oplus/storage/Kconfig
+          touch drivers/soc/oplus/storage/Makefile
+          sed -i '/oplus\/storage/d' drivers/soc/Makefile || true
           CONFIG_FILE=./arch/arm64/configs/gki_defconfig
           MAKEFILE=./kernel/Makefile
 
