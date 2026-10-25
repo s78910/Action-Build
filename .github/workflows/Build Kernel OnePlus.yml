@@ -9,6 +9,21 @@ on:
         default: oneplus_11_t
         options:
           - oneplus_11_t
+          - oneplus_11_u
+          - oneplus_11_v
+          - oneplus_11_b
+          - oneplus_ace2_t
+          - oneplus_ace2_v
+          - oneplus_ace2_b
+          - oneplus_ace2_pro_t
+          - oneplus_ace2_pro_v
+          - oneplus_ace2_pro_b
+          - oneplus_ace3_u
+          - oneplus_ace3_v
+          - oneplus_ace3_b
+          - oneplus_ace_pro_t
+          - oneplus_ace_pro_u
+          - oneplus_ace_pro_v
           - oneplus_nord_n30_se_5g_v
           - oneplus_10r_v
           - oneplus_nord_3_b
@@ -103,7 +118,7 @@ on:
         type: string
         description: "管理器分支名(必填)/内置分支名(必填)/自定义版本标识(留空不修改)/回退分支提交哈希版本(留空不修改)//Manager Branch name (Required) / Builtin branch name (Required) / Custom version identifier (Leave blank to not modify) / Rollback branch commit hash version (Leave blank to not modify)"
         required: false
-        default: "main/main//"
+        default: "main/main//373303c525d05c8b47801305f506ef9124dbd6e6"
       LZ4_UPDATE:
         type: boolean
         description: "是否升级LZ4到上游最新？//Upgrade LZ4 to the latest upstream?"
@@ -271,7 +286,14 @@ jobs:
             done
             return 1
           }
-          if ! check_repo "${REPOS["OnePlusOSS"]}"; then
+          LOCAL_XML="$GITHUB_WORKSPACE/Action-Build/manifests/${FILE}.xml"
+          if [[ -f "$LOCAL_XML" ]]; then
+            echo "✅ 在本地 manifests/ 目录中找到 ${FILE}.xml"
+            cp "$LOCAL_XML" "$XML_PATH"
+            FOUND_REPO="Local"
+            FOUND_REPO_NAME="Action-Build"
+            FOUND_BRANCH="${{ github.ref_name }}"
+          elif ! check_repo "${REPOS["OnePlusOSS"]}"; then
             if ! check_repo "${REPOS["Dynamic"]}"; then
               check_repo "${REPOS["Appendix"]}"
             fi
@@ -315,7 +337,19 @@ jobs:
               echo "❌ README.md 中未找到构建命令"
             fi
           else
-            echo "❌ README.md 下载失败或为空"
+            echo "⚠️ README.md 下载失败或为空，尝试按 CPU 架构自动补全"
+          fi
+          if [[ -z "$CPUD" || -z "$BUILD_METHOD" ]]; then
+            if [[ "$CPU" == "sm8550" ]]; then
+              CPUD="kalama"
+              BUILD_METHOD="kalama"
+            elif [[ "$CPU" == "sm8475" ]]; then
+              CPUD="waipio"
+              BUILD_METHOD="waipio"
+            fi
+            echo "✅ 自动补全 CPUD=$CPUD, BUILD_METHOD=$BUILD_METHOD"
+            echo "CPUD=$CPUD" >> $GITHUB_ENV
+            echo "BUILD_METHOD=$BUILD_METHOD" >> $GITHUB_ENV
           fi
 
           # 传递组合信息
@@ -685,7 +719,11 @@ jobs:
             git checkout "$MANUAL_HASH"
           fi
 
-          KSU_VERSION=$(expr $(git rev-list --count HEAD 2>/dev/null || echo 13000) + 30700)
+          if [[ "$MANUAL_HASH" == "373303c5"* ]]; then
+            KSU_VERSION=35218
+          else
+            KSU_VERSION=$(expr $(git rev-list --count HEAD 2>/dev/null || echo 13000) + 30700)
+          fi
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
 
           # 消除 BakaSU 上游人为阻断构建的 error 指令 (commit 48fa4bb7)
