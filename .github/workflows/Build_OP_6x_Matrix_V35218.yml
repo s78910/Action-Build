@@ -242,50 +242,6 @@ jobs:
             KSU_VER=$(expr $(git rev-list --count main 2>/dev/null || echo 4518) + 30700)
             echo "KSU_VER=$KSU_VER" >> $GITHUB_ENV
             cd ..
-
-            # 为 BakaSU 注入 fake_state 全局符号与 sepolicy 同步逻辑 (解决 6.1 链接 undefined symbol: fake_state)
-            python3 -c "
-with open('KernelSU/kernel/feature/selinux_hide.c', 'r') as f:
-    c = f.read()
-if 'fake_state' not in c:
-    insert_str = '''
-#ifdef CONFIG_KSU_SUSFS
-#include <linux/version.h>
-struct selinux_state fake_state;
-#endif
-'''
-    c = insert_str + c
-    enable_hook = '''
-#ifdef CONFIG_KSU_SUSFS
-    fake_state.initialized = true;
-    fake_state.policy = backup_sepolicy;
-#endif
-'''
-    if 'void __init ksu_selinux_hide_init()' in c:
-        c = c.replace('void __init ksu_selinux_hide_init()\n{', 'void __init ksu_selinux_hide_init()\n{' + enable_hook)
-    with open('KernelSU/kernel/feature/selinux_hide.c', 'w') as f:
-        f.write(c)
-" || true
-
-            python3 -c "
-with open('KernelSU/kernel/selinux/rules.c', 'r') as f:
-    c = f.read()
-if 'fake_state' not in c:
-    sync_str = '''
-#ifdef CONFIG_KSU_SUSFS
-    {
-        extern struct selinux_state fake_state;
-        fake_state.initialized = true;
-        fake_state.policy = backup_sepolicy;
-    }
-#endif
-'''
-    target = 'backup_sepolicy = ksu_dup_sepolicy(old_pol);'
-    if target in c:
-        c = c.replace(target, target + sync_str)
-        with open('KernelSU/kernel/selinux/rules.c', 'w') as f:
-            f.write(c)
-" || true
           else
             echo "KSU_VER=0" >> $GITHUB_ENV
           fi
@@ -308,28 +264,8 @@ if 'fake_state' not in c:
             cd ..
           fi
           
-          # 确保 fs/namespace.c 包含 susfs 头文件与定义 (防止 Ace 5 Pro 等机型 hunk 失败导致符号未定义)
-          if [ -f "./common/fs/namespace.c" ]; then
-            python3 -c "
-with open('./common/fs/namespace.c', 'r') as f:
-    c = f.read()
-if 'susfs_def.h' not in c:
-    patch = '''
-#ifdef CONFIG_KSU_SUSFS
-#include <linux/susfs_def.h>
-#endif
-#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-extern bool susfs_is_current_ksu_domain(void);
-extern struct static_key_true susfs_is_sdcard_android_data_not_decrypted;
-#define CL_COPY_MNT_NS BIT(25)
-#endif
-'''
-    if '#include \"pnode.h\"' in c:
-        c = c.replace('#include \"pnode.h\"', patch + '#include \"pnode.h\"')
-        with open('./common/fs/namespace.c', 'w') as f:
-            f.write(c)
-" || true
-          fi
+          # 为 BakaSU 与 namespace.c 自动修复 SuSFS 关联符号与定义
+          python3 "${{ github.workspace }}/scripts/fix_susfs_bakasu.py" || true
           
           # 为 KernelSU 打入 susfs 补丁 (提供 fake_state 符号支持)
           if [ -d "KernelSU" ]; then
