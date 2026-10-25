@@ -118,7 +118,7 @@ on:
         type: string
         description: "管理器分支名(必填)/内置分支名(必填)/自定义版本标识(留空不修改)/回退分支提交哈希版本(留空不修改)//Manager Branch name (Required) / Builtin branch name (Required) / Custom version identifier (Leave blank to not modify) / Rollback branch commit hash version (Leave blank to not modify)"
         required: false
-        default: "main/main//373303c525d05c8b47801305f506ef9124dbd6e6"
+        default: "main/main//d5e9e025b8b49155f8014684d64c91742b465f65"
       LZ4_UPDATE:
         type: boolean
         description: "是否升级LZ4到上游最新？//Upgrade LZ4 to the latest upstream?"
@@ -725,10 +725,12 @@ jobs:
             git checkout "$MANUAL_HASH"
           fi
 
-          if [[ "$MANUAL_HASH" == "373303c5"* ]]; then
+          if [[ "$MANUAL_HASH" == "d5e9e025"* ]]; then
+            KSU_VERSION=35252
+          elif [[ "$MANUAL_HASH" == "373303c5"* ]]; then
             KSU_VERSION=35218
           else
-            KSU_VERSION=$(expr $(git rev-list --count HEAD 2>/dev/null || echo 13000) + 30700)
+            KSU_VERSION=$(expr $(git rev-list --count HEAD 2>/dev/null || echo 4552) + 30700)
           fi
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
 

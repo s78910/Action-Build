@@ -1,5 +1,5 @@
-name: Build OnePlus Multi-Device Matrix (v35218)
-run-name: OnePlus Multi-Matrix Build (v35218)
+name: Build OnePlus Multi-Device Matrix (v35252)
+run-name: OnePlus Multi-Matrix Build (v35252)
 on:
   workflow_dispatch:
     inputs:
@@ -68,7 +68,7 @@ jobs:
           - file: oneplus_ace_pro_v
             group: ACE_PRO
             name: "Ace Pro (Android 15)"
-    name: ${{ matrix.name }} [v35218+SuSFS]
+    name: ${{ matrix.name }} [v35252+SuSFS]
     runs-on: ubuntu-latest
     env:
       CCACHE_COMPILERCHECK: "none"
@@ -95,7 +95,7 @@ jobs:
       SUFFIX: ""
       RESUBLEVEL: ""
       BUILD_TIME: "Thu Apr 2 08:08:53 UTC 2026"
-      KSU_META: "main/main//373303c525d05c8b47801305f506ef9124dbd6e6"
+      KSU_META: "main/main//d5e9e025b8b49155f8014684d64c91742b465f65"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -270,7 +270,7 @@ jobs:
           fi
           echo "Selected KPM: ${{ env.KPM }}"
           echo "Custom SUSFS_META: "
-          echo "Custom KSU_META: main/main//373303c525d05c8b47801305f506ef9124dbd6e6"
+          echo "Custom KSU_META: main/main//d5e9e025b8b49155f8014684d64c91742b465f65"
           echo "Selected ZRAM: 0/lz4kd/8589934592"
           echo "Selected LSM_BBG: false"
           echo "Selected NETFILTER: false"
@@ -590,7 +590,7 @@ jobs:
       - name: Add BakaSU
         run: |
           cd kernel_workspace/kernel_platform
-          KSU_META="main/main//373303c525d05c8b47801305f506ef9124dbd6e6"
+          KSU_META="main/main//d5e9e025b8b49155f8014684d64c91742b465f65"
           FAST_BUILD="true"
 
           # 必须包含两个分隔符（至少四个字段）
@@ -617,10 +617,12 @@ jobs:
             git checkout "$MANUAL_HASH"
           fi
 
-          if [[ "$MANUAL_HASH" == "373303c5"* ]]; then
+          if [[ "$MANUAL_HASH" == "d5e9e025"* ]]; then
+            KSU_VERSION=35252
+          elif [[ "$MANUAL_HASH" == "373303c5"* ]]; then
             KSU_VERSION=35218
           else
-            KSU_VERSION=$(expr $(git rev-list --count HEAD 2>/dev/null || echo 13000) + 30700)
+            KSU_VERSION=$(expr $(git rev-list --count HEAD 2>/dev/null || echo 4552) + 30700)
           fi
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
 
