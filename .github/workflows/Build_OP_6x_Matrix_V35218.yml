@@ -224,13 +224,10 @@ jobs:
             [ -f "$f" ] && sed -i 's/ -dirty//g' "$f"
           done
           
-          # 修复部分机型 (如 Ace 3 Pro A15) 缺失 oplus_resctrl/Kconfig 导致的配置中断
-          if [ -d "common/drivers/soc/oplus/oplus_resctrl" ]; then
-            touch common/drivers/soc/oplus/oplus_resctrl/Kconfig || true
-          elif [ ! -e "common/drivers/soc/oplus/oplus_resctrl" ]; then
-            mkdir -p common/drivers/soc/oplus/oplus_resctrl || true
-            touch common/drivers/soc/oplus/oplus_resctrl/Kconfig || true
-          fi
+          # 彻底清理悬空软链接并创建真实目录与 Kconfig
+          rm -rf common/drivers/soc/oplus/oplus_resctrl || true
+          mkdir -p common/drivers/soc/oplus/oplus_resctrl || true
+          touch common/drivers/soc/oplus/oplus_resctrl/Kconfig || true
 
       - name: 注入 BakaSU 与 Unicode 零宽漏洞防护
         run: |
