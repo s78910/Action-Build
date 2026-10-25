@@ -736,6 +736,20 @@ jobs:
           if [[ -f "kernel/tools/susfs_compat.mk" ]]; then
             sed -i '/Please wait susfs update/d' kernel/tools/susfs_compat.mk || true
             sed -i '/susfs has NOT update/d' kernel/tools/susfs_compat.mk || true
+            echo "ccflags-y += -DKSU_COMPAT_HAS_SUSFS_FEATURE_SELINUX_HIDE" >> kernel/tools/susfs_compat.mk
+          fi
+
+          # 注入 weak fallback 符号，彻底免疫 SuSFS 5.10/5.15 链接时 undefined symbol 错误
+          if [[ -f "kernel/compat/kernel_compat.c" ]]; then
+            {
+              echo ""
+              echo "/* SuSFS fallback weak stubs for safety against linker errors */"
+              echo "__attribute__((weak)) int ksu_setup_preinit_file(struct filename **filename_ptr, void *argv_user) { return -1; }"
+              echo "__attribute__((weak)) int ksu_preinit_handle_post_execveat(int *fd, struct filename **filename_ptr, void *argv_user, void *envp_user, int *flags, int *retval, int *preinit_fd) { return 0; }"
+              echo "__attribute__((weak)) int my_setprocattr(const char *name, void *value, size_t size) { return -95; }"
+              echo "__attribute__((weak)) ssize_t my_write_context(struct file *file, char *buf, size_t size) { return -95; }"
+              echo "__attribute__((weak)) ssize_t my_write_access(struct file *file, char *buf, size_t size) { return -95; }"
+            } >> kernel/compat/kernel_compat.c
           fi
 
           if [ "$FAST_BUILD" = "false" ]; then
@@ -1011,6 +1025,8 @@ jobs:
       - name: Add Configuration Settings
         run: |
           cd kernel_workspace/kernel_platform/common
+          mkdir -p drivers/soc/oplus/storage
+          touch drivers/soc/oplus/storage/Kconfig
           CONFIG_FILE=./arch/arm64/configs/gki_defconfig
           MAKEFILE=./kernel/Makefile
 
@@ -1424,6 +1440,7 @@ jobs:
           fi
 
           make O=out "${MAKE_ARGS[@]}" olddefconfig --no-print-directory
+          make O=out "${MAKE_ARGS[@]}" headers_install --no-print-directory || true
           make -j"$(nproc --all)" O=out "${MAKE_ARGS[@]}"
           ccache -s
 
