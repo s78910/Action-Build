@@ -262,8 +262,10 @@ jobs:
           unzip -q build-tools.zip -d build-tools
           rm -f build-tools.zip
           
-          CLANG_BIN=$(find $(pwd)/toolchain -type f -name clang | head -n 1 | xargs dirname)
-          BUILD_TOOLS_BIN=$(find $(pwd)/build-tools -type f -name make -o -name flex | head -n 1 | xargs dirname)
+          CLANG_BIN=$(find "$PWD/toolchain" -type d -name bin | head -n 1)
+          BUILD_TOOLS_BIN=$(find "$PWD/build-tools" -type d -name bin | head -n 1)
+          if [ -z "$CLANG_BIN" ]; then CLANG_BIN="$PWD/toolchain/bin"; fi
+          if [ -z "$BUILD_TOOLS_BIN" ]; then BUILD_TOOLS_BIN="$PWD/build-tools/bin"; fi
           echo "CLANG_BIN=$CLANG_BIN" >> $GITHUB_ENV
           echo "BUILD_TOOLS_BIN=$BUILD_TOOLS_BIN" >> $GITHUB_ENV
           
@@ -403,11 +405,17 @@ jobs:
           echo "🚀 开始编译内核 Image..."
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image
           
-          if [ ! -f "out/arch/arm64/boot/Image" ]; then
+          IMAGE_FILE=""
+          if [ -f "out/arch/arm64/boot/Image" ]; then
+            IMAGE_FILE="out/arch/arm64/boot/Image"
+          elif [ -f "arch/arm64/boot/Image" ]; then
+            IMAGE_FILE="arch/arm64/boot/Image"
+          fi
+          if [ -z "$IMAGE_FILE" ]; then
             echo "❌ 编译失败：未生成 Image 文件"
             exit 1
           fi
-          echo "✅ 内核 Image 编译完成！大小: $(du -h out/arch/arm64/boot/Image | awk '{print $1}')"
+          echo "✅ 内核 Image 编译完成！路径: $IMAGE_FILE, 大小: $(du -h "$IMAGE_FILE" | awk '{print $1}')"
 
       - name: 打包 AnyKernel3 刷机包 (纯净无 KPN/KPM)
         run: |
@@ -415,7 +423,11 @@ jobs:
           git clone --depth=1 https://github.com/cctv18/AnyKernel3 AnyKernel3
           rm -rf AnyKernel3/.git
           
-          cp common/out/arch/arm64/boot/Image AnyKernel3/Image
+          if [ -f "common/out/arch/arm64/boot/Image" ]; then
+            cp common/out/arch/arm64/boot/Image AnyKernel3/Image
+          elif [ -f "common/arch/arm64/boot/Image" ]; then
+            cp common/arch/arm64/boot/Image AnyKernel3/Image
+          fi
           
           AK3_NAME="AnyKernel3_BakaSU_${KSU_VER}_${{ matrix.device }}_${{ matrix.android_ver }}(${{ matrix.kernel_ver }}.${{ matrix.sub_ver }}).zip"
           echo "AK3_NAME=$AK3_NAME" >> $GITHUB_ENV
