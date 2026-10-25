@@ -1,0 +1,44 @@
+================================================================================
+OnePlus 11 (Android 16 / ColorOS 16) 官方底包镜像与内核分析报告
+================================================================================
+
+1. 原始文件来源
+- 压缩包路径: H:\1\m1\resourse\b+i-11-16.0.5.701.zip
+- 系统版本: OnePlus 11 - Android 16 (ColorOS 16.0.5.701)
+- 芯片平台: 高通骁龙 8 Gen 2 (SM8550 / kalama / salami)
+
+2. 镜像提取与分区结构 (Android 13+ GKI 架构 - Header v4)
+- boot.img:
+  * 文件大小: 201,326,592 字节 (192 MB)
+  * HEADER_VER: 4
+  * KERNEL_SZ: 54,123,008 字节 (纯内核 Image 二进制)
+  * RAMDISK_SZ: 0 (GKI 架构中 ramdisk 移至 init_boot)
+  * OS_VERSION: 13.0.0
+  * OS_PATCH_LEVEL: 2026-04
+  * CMDLINE: 空 (通过 bootconfig / vendor boot 传递)
+  * KERNEL_FMT: raw (标准 uncompressed ARM64 Image)
+
+- init_boot.img:
+  * 文件大小: 8,388,608 字节 (8 MB)
+  * HEADER_VER: 4
+  * KERNEL_SZ: 0
+  * RAMDISK_SZ: 2,331,073 字节
+  * RAMDISK_FMT: lz4_legacy (通用 Ramdisk)
+
+3. 官方内核版本与构建指纹 (Kernel Banner)
+- 完整版本信息:
+  Linux version 5.15.180-android13-8-o-01178-gfc2079499f31 (build-user@build-host) (Android (8508608, based on r450784e) clang version 14.0.7 (https://android.googlesource.com/toolchain/llvm-project 4c603efb0cca074e9238af8b4106c30add4418f6), LLD 14.0.7) #1 SMP PREEMPT Thu Apr 2 08:08:53 UTC 2026
+- 内核版本号: Linux 5.15.180
+- KMI 分支: android13-5.15
+- 官方后缀: 8-o-01178-gfc2079499f31
+- 官方编译时间: Thu Apr 2 08:08:53 UTC 2026
+
+4. 对应云端编译配置 (Action-Build)
+- 目标配置项 (FILE): oneplus_11_b
+  * 清单匹配: OnePlusOSS/kernel_manifest (分支: oneplus/sm8550 -> oneplus_11_b.xml)
+  * 源码工程分支: oneplus/sm8550_b_16.0.0_oneplus_11
+  * 平台参数: CPU=sm8550, CPUD=kalama, BUILD_METHOD=gki
+- 集成方案: BakaSU (SukiSU) + SuSFS v2
+- 自定义后缀 (SUFFIX): 8-o-01178-gfc2079499f31 (完全拟真官方内核指纹)
+- 自定义构建时间 (BUILD_TIME): Thu Apr 02 08:08:53 UTC 2026
+================================================================================

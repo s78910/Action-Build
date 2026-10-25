@@ -1,4 +1,11 @@
 **`简体中文`** | [English](README-en.md)
+
+> [!TIP]
+> **🚀 一加 11 (Android 16 / ColorOS 16) 专用分支导航**：
+> - 完整成功编译实战经验与踩坑复盘：详见 [docs/ONEPLUS11_A16_EXPERIENCE.md](docs/ONEPLUS11_A16_EXPERIENCE.md)
+> - 一键开箱即用工作流：[.github/workflows/Build_OnePlus11_A16.yml](.github/workflows/Build_OnePlus11_A16.yml)（参数已预填为实机 100% 成功组合，无需手动修改）
+> - 本地自动化重打包、提取与刷机工具：详见 [tools/oneplus11_a16/](tools/oneplus11_a16/)
+
  
 [![Workflow Status](https://img.shields.io/github/actions/workflow/status/Numbersf/Action-Build/Build%20Kernel%20OnePlus.yml?branch=BakaSU&label=remote%20build&logo=github-actions&style=flat-square)](https://github.com/Numbersf/Action-Build/actions/workflows/Build%20Kernel%20OnePlus.yml?query=branch%3ABakaSU) ![Downloads](https://img.shields.io/github/downloads/Numbersf/Action-Build/total)
  
