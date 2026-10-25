@@ -12,7 +12,7 @@ def patch_selinux_hide():
         print("[+] selinux_hide.c already has fake_state")
         return
     
-    decl = "\n#ifdef CONFIG_KSU_SUSFS\n#include <linux/version.h>\nstruct selinux_state fake_state;\n#endif\n"
+    decl = "\n#ifdef CONFIG_KSU_SUSFS\n#include <linux/version.h>\nstruct selinux_state fake_state;\nextern struct selinux_policy *backup_sepolicy;\n#endif\n"
     content = decl + content
     
     hook = "\n#ifdef CONFIG_KSU_SUSFS\n    fake_state.initialized = true;\n    fake_state.policy = backup_sepolicy;\n#endif\n"

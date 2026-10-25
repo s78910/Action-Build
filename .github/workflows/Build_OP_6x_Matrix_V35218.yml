@@ -268,18 +268,8 @@ jobs:
             cd ..
           fi
           
-          # 为 BakaSU 与 namespace.c 自动修复 SuSFS 关联符号与定义
+          # 为 BakaSU 与 namespace.c 自动修复 SuSFS 关联符号与定义 (提供 fake_state 与 susfs_def.h 支持)
           python3 "${{ github.workspace }}/scripts/fix_susfs_bakasu.py" || true
-          
-          # 为 KernelSU 打入 susfs 补丁 (提供 fake_state 符号支持)
-          if [ -d "KernelSU" ]; then
-            KSU_SUSFS_PATCH=$(find susfs4ksu/kernel_patches -name "*enable_susfs_for_ksu*.patch" | head -n 1)
-            if [ -n "$KSU_SUSFS_PATCH" ] && [ -f "$KSU_SUSFS_PATCH" ]; then
-              cd ./KernelSU
-              patch -p1 -F 3 < "../$KSU_SUSFS_PATCH" || true
-              cd ..
-            fi
-          fi
           
           # 应用隐藏内存段补丁
           if [ -f "${{ github.workspace }}/patches_6x/69_hide_stuff.patch" ]; then
