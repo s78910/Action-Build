@@ -116,28 +116,9 @@ jobs:
             susfs_branch: oki-android14-6.1
             chip: MT6989
 
-          # --- 6.6 高通 SM8750 系列 (A15 & A16 双版本) ---
-          - device: OnePlus13
-            android_ver: Android15
-            kernel_ver: '6.6'
-            sub_ver: '66'
-            repo: cctv18/android_kernel_common_oneplus_sm8750
-            branch: oneplus/sm8750_v_15.0.0_oneplus_13
-            toolchain: LLVM-Clang18-r510928
-            clang_pkg: clang-r510928.zip
-            susfs_branch: oki-android15-6.6
-            chip: SM8750
-
-          - device: OnePlus13
-            android_ver: Android16
-            kernel_ver: '6.6'
-            sub_ver: '118'
-            repo: cctv18/android_kernel_common_oneplus_sm8750
-            branch: oneplus/sm8750_b_16.0.0_oneplus_13_6.6.118
-            toolchain: LLVM-Clang18-r510928
-            clang_pkg: clang-r510928.zip
-            susfs_branch: oki-android15-6.6
-            chip: SM8750
+          # --- 6.6 高通 SM8750 系列 (已完成机型暂时注销以加速并发，其余待编) ---
+          # - device: OnePlus13 (已完成出包)
+          # - device: OnePlus13 (已完成出包)
 
           - device: OnePlusAce5Pro
             android_ver: Android15
@@ -150,50 +131,11 @@ jobs:
             susfs_branch: oki-android15-6.6
             chip: SM8750
 
-          - device: OnePlusAce5Pro
-            android_ver: Android16
-            kernel_ver: '6.6'
-            sub_ver: '118'
-            repo: cctv18/android_kernel_common_oneplus_sm8750
-            branch: oneplus/sm8750_b_16.0.0_oneplus_13_6.6.118
-            toolchain: LLVM-Clang18-r510928
-            clang_pkg: clang-r510928.zip
-            susfs_branch: oki-android15-6.6
-            chip: SM8750
-
-          - device: OnePlusAce6
-            android_ver: Android16
-            kernel_ver: '6.6'
-            sub_ver: '89'
-            repo: cctv18/android_kernel_common_oneplus_sm8750
-            branch: oneplus/sm8750_v_16.0.0_ace_6
-            toolchain: LLVM-Clang18-r510928
-            clang_pkg: clang-r510928.zip
-            susfs_branch: oki-android15-6.6
-            chip: SM8750
-
-          # --- 6.6 天玑 MT6991 / 9400 系列 (A15 & A16 双版本) ---
-          - device: OnePlusAce5Ultra
-            android_ver: Android15
-            kernel_ver: '6.6'
-            sub_ver: '89_mtk'
-            repo: cctv18/android_kernel_oneplus_mt6991
-            branch: oneplus/mt6991_v_15.0.2_ace5_ultra_6.6.89
-            toolchain: LLVM-Clang18-r510928
-            clang_pkg: clang-r510928.zip
-            susfs_branch: oki-android15-6.6
-            chip: MT6991
-
-          - device: OnePlusAce5Ultra
-            android_ver: Android16
-            kernel_ver: '6.6'
-            sub_ver: '89_mtk'
-            repo: cctv18/android_kernel_oneplus_mt6991
-            branch: oneplus/mt6991_b_16.0.0_oneplus_ace5_ultra
-            toolchain: LLVM-Clang18-r510928
-            clang_pkg: clang-r510928.zip
-            susfs_branch: oki-android15-6.6
-            chip: MT6991
+          # - device: OnePlusAce5Pro (已完成出包)
+          # - device: OnePlusAce6 (已完成出包)
+          # --- 6.6 天玑 MT6991 / 9400 系列 (已完成出包) ---
+          # - device: OnePlusAce5Ultra (已完成出包)
+          # - device: OnePlusAce5Ultra (已完成出包)
 
           # --- 6.12 高通 SM8845 系列 (一加 Ace 6T) ---
           - device: OnePlusAce6T
@@ -300,6 +242,50 @@ jobs:
             KSU_VER=$(expr $(git rev-list --count main 2>/dev/null || echo 4518) + 30700)
             echo "KSU_VER=$KSU_VER" >> $GITHUB_ENV
             cd ..
+
+            # 为 BakaSU 注入 fake_state 全局符号与 sepolicy 同步逻辑 (解决 6.1 链接 undefined symbol: fake_state)
+            python3 -c "
+with open('KernelSU/kernel/feature/selinux_hide.c', 'r') as f:
+    c = f.read()
+if 'fake_state' not in c:
+    insert_str = '''
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/version.h>
+struct selinux_state fake_state;
+#endif
+'''
+    c = insert_str + c
+    enable_hook = '''
+#ifdef CONFIG_KSU_SUSFS
+    fake_state.initialized = true;
+    fake_state.policy = backup_sepolicy;
+#endif
+'''
+    if 'void __init ksu_selinux_hide_init()' in c:
+        c = c.replace('void __init ksu_selinux_hide_init()\n{', 'void __init ksu_selinux_hide_init()\n{' + enable_hook)
+    with open('KernelSU/kernel/feature/selinux_hide.c', 'w') as f:
+        f.write(c)
+" || true
+
+            python3 -c "
+with open('KernelSU/kernel/selinux/rules.c', 'r') as f:
+    c = f.read()
+if 'fake_state' not in c:
+    sync_str = '''
+#ifdef CONFIG_KSU_SUSFS
+    {
+        extern struct selinux_state fake_state;
+        fake_state.initialized = true;
+        fake_state.policy = backup_sepolicy;
+    }
+#endif
+'''
+    target = 'backup_sepolicy = ksu_dup_sepolicy(old_pol);'
+    if target in c:
+        c = c.replace(target, target + sync_str)
+        with open('KernelSU/kernel/selinux/rules.c', 'w') as f:
+            f.write(c)
+" || true
           else
             echo "KSU_VER=0" >> $GITHUB_ENV
           fi
@@ -320,6 +306,29 @@ jobs:
             cd ./common
             patch -p1 -F 3 < $(basename "$PATCH_FILE") || true
             cd ..
+          fi
+          
+          # 确保 fs/namespace.c 包含 susfs 头文件与定义 (防止 Ace 5 Pro 等机型 hunk 失败导致符号未定义)
+          if [ -f "./common/fs/namespace.c" ]; then
+            python3 -c "
+with open('./common/fs/namespace.c', 'r') as f:
+    c = f.read()
+if 'susfs_def.h' not in c:
+    patch = '''
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs_def.h>
+#endif
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+extern bool susfs_is_current_ksu_domain(void);
+extern struct static_key_true susfs_is_sdcard_android_data_not_decrypted;
+#define CL_COPY_MNT_NS BIT(25)
+#endif
+'''
+    if '#include \"pnode.h\"' in c:
+        c = c.replace('#include \"pnode.h\"', patch + '#include \"pnode.h\"')
+        with open('./common/fs/namespace.c', 'w') as f:
+            f.write(c)
+" || true
           fi
           
           # 为 KernelSU 打入 susfs 补丁 (提供 fake_state 符号支持)
@@ -384,9 +393,10 @@ jobs:
           echo "CONFIG_TMPFS_POSIX_ACL=y" >> arch/arm64/configs/gki_defconfig
           echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> arch/arm64/configs/gki_defconfig
           echo "CONFIG_HEADERS_INSTALL=n" >> arch/arm64/configs/gki_defconfig
-          # 禁用 BTF 调试信息，避免 6.12 resolve_btfids 链接中断
+          # 彻底禁用 BTF 调试信息与模块 BTF，避免 6.12 resolve_btfids 链接中断
+          sed -i '/CONFIG_DEBUG_INFO_BTF/d' arch/arm64/configs/gki_defconfig 2>/dev/null || true
           echo "CONFIG_DEBUG_INFO_BTF=n" >> arch/arm64/configs/gki_defconfig
-          sed -i 's/CONFIG_DEBUG_INFO_BTF=y/CONFIG_DEBUG_INFO_BTF=n/g' arch/arm64/configs/gki_defconfig 2>/dev/null || true
+          echo "CONFIG_DEBUG_INFO_BTF_MODULES=n" >> arch/arm64/configs/gki_defconfig
           
           # 禁用 defconfig 严格校验
           [ -f build.config.gki ] && sed -i 's/check_defconfig//' build.config.gki || true
@@ -425,6 +435,12 @@ jobs:
           
           echo "🚀 开始构建 gki_defconfig..."
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD="ld.lld" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig
+          
+          # 确保生成后的 out/.config 同样强制关闭 BTF
+          if [ -f "out/.config" ]; then
+            sed -i 's/CONFIG_DEBUG_INFO_BTF=y/CONFIG_DEBUG_INFO_BTF=n/g' out/.config 2>/dev/null || true
+            sed -i 's/CONFIG_DEBUG_INFO_BTF_MODULES=y/CONFIG_DEBUG_INFO_BTF_MODULES=n/g' out/.config 2>/dev/null || true
+          fi
           
           echo "🚀 开始编译内核 Image..."
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image
