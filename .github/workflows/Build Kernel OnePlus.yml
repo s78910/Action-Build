@@ -1025,6 +1025,7 @@ jobs:
       - name: Add Configuration Settings
         run: |
           cd kernel_workspace/kernel_platform/common
+          rm -rf drivers/soc/oplus/storage
           mkdir -p drivers/soc/oplus/storage
           touch drivers/soc/oplus/storage/Kconfig
           CONFIG_FILE=./arch/arm64/configs/gki_defconfig
