@@ -180,7 +180,7 @@ jobs:
       - name: 准备编译环境与工具链
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends binutils python-is-python3 libssl-dev libelf-dev zlib1g-dev pkg-config aria2 zip unzip ccache gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+          sudo apt-get install -y --no-install-recommends binutils python-is-python3 libssl-dev libelf-dev libdw-dev zlib1g-dev pkg-config aria2 zip unzip ccache gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
           
           mkdir -p workspace
           cd workspace
@@ -225,8 +225,12 @@ jobs:
           done
           
           # 修复部分机型 (如 Ace 3 Pro A15) 缺失 oplus_resctrl/Kconfig 导致的配置中断
-          mkdir -p common/drivers/soc/oplus/oplus_resctrl
-          touch common/drivers/soc/oplus/oplus_resctrl/Kconfig
+          if [ -d "common/drivers/soc/oplus/oplus_resctrl" ]; then
+            touch common/drivers/soc/oplus/oplus_resctrl/Kconfig || true
+          elif [ ! -e "common/drivers/soc/oplus/oplus_resctrl" ]; then
+            mkdir -p common/drivers/soc/oplus/oplus_resctrl || true
+            touch common/drivers/soc/oplus/oplus_resctrl/Kconfig || true
+          fi
 
       - name: 注入 BakaSU 与 Unicode 零宽漏洞防护
         run: |
