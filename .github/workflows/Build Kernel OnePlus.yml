@@ -286,7 +286,7 @@ jobs:
             done
             return 1
           }
-          LOCAL_XML="$GITHUB_WORKSPACE/Action-Build/manifests/${FILE}.xml"
+          LOCAL_XML="$GITHUB_WORKSPACE/kernel_workspace/Action-Build/manifests/${FILE}.xml"
           if [[ -f "$LOCAL_XML" ]]; then
             echo "✅ 在本地 manifests/ 目录中找到 ${FILE}.xml"
             cp "$LOCAL_XML" "$XML_PATH"
