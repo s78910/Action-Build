@@ -59,19 +59,39 @@ jobs:
             group: ACE_PRO
             name: "Ace Pro (Android 15)"
     name: ${{ matrix.name }} [v35218+SuSFS]
-    runs-on: ubuntu-latest
+        runs-on: ubuntu-latest
     env:
       CCACHE_COMPILERCHECK: "none"
       CCACHE_NOHASHDIR: "true"
       CCACHE_NOHARDLINK: "true"
       CCACHE_IS_KERNEL_COMPILING: "true"
       CCACHE_MAXSIZE: 5G
+      FAST_BUILD: "true"
+      UNICODE_BYPASS: "true"
+      KPM: "KPN"
+      SUSFS_CI: "Release"
+      SUSFS_META: ""
+      SUSFS_DEV: "false"
+      SCHED_HMBIRD: "false"
+      SPACE_NOCLEAN: "false"
+      BUILD_NOCACHE: "false"
+      LSM_BBG: "false"
+      NETFILTER: "false"
+      CCM: "false"
+      DROID_SPACES: "false"
+      RE_KERNEL: "false"
+      LZ4_UPDATE: "false"
+      ZRAM: "0/lz4kd/8589934592"
+      SUFFIX: ""
+      RESUBLEVEL: ""
+      BUILD_TIME: "Thu Apr 2 08:08:53 UTC 2026"
+      KSU_META: "main/main//373303c525d05c8b47801305f506ef9124dbd6e6"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - name: Maximize Build Space
-        if: ${{ github.event.inputs.SPACE_NOCLEAN == 'false' }}
+        if: ${{ env.SPACE_NOCLEAN == 'false' }}
         env:
           ROOT_RESERVE_MB: '8192'
           TEMP_RESERVE_MB: '2048'
@@ -272,7 +292,7 @@ jobs:
           free -h
 
       - name: Set Cache Environment
-        if: ${{ github.event.inputs.BUILD_NOCACHE == 'false' }}
+        if: ${{ env.BUILD_NOCACHE == 'false' }}
         run: |
           echo "CCACHE_DIR=$HOME/.ccache_${{ matrix.file }}" >> $GITHUB_ENV
           mkdir -p "$HOME/.ccache_${{ matrix.file }}"
@@ -317,15 +337,15 @@ jobs:
          sudo cp -f "$LIB_DIR/ccache" /usr/bin/ccache && sudo chmod +x /usr/bin/ccache
 
       - name: Restore Ccache
-        if: ${{ github.event.inputs.BUILD_NOCACHE == 'false' }}
+        if: ${{ env.BUILD_NOCACHE == 'false' }}
         id: restore-ccache
         uses: actions/cache/restore@v5
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ runner.os }}-${{ github.ref_name }}-${{ matrix.file }}-${{ env.BUILD_METHOD }}-${{ github.event.inputs.FAST_BUILD == 'true' && 'alpha' || 'beta' }}-17.0
+          key: ccache-${{ runner.os }}-${{ github.ref_name }}-${{ matrix.file }}-${{ env.BUILD_METHOD }}-${{ env.FAST_BUILD == 'true' && 'alpha' || 'beta' }}-17.0
 
       - name: Restore ThinLTO Cache
-        if: ${{ github.event.inputs.BUILD_NOCACHE == 'false' && github.event.inputs.FAST_BUILD == 'true' }}
+        if: ${{ env.BUILD_NOCACHE == 'false' && env.FAST_BUILD == 'true' }}
         id: restore-thinlto
         uses: actions/cache/restore@v5
         with:
@@ -333,7 +353,7 @@ jobs:
           key: thinlto-${{ runner.os }}-${{ github.ref_name }}-${{ matrix.file }}-17.0
 
       - name: Initialize Ccache
-        if: ${{ github.event.inputs.BUILD_NOCACHE == 'false' }}
+        if: ${{ env.BUILD_NOCACHE == 'false' }}
         run: |
           INIT_FLAG="${{ env.CCACHE_DIR }}/.ccache_initialized"
           if command -v ccache >/dev/null 2>&1; then
@@ -481,7 +501,7 @@ jobs:
 
       # 自定义内核后缀
       - name: Custom Kernel Suffix if set
-        if: ${{ github.event.inputs.SUFFIX != '' && github.event.inputs.SUFFIX != '-1' }}
+        if: ${{ env.SUFFIX != '' && env.SUFFIX != '-1' }}
         run: |
           cd kernel_workspace/kernel_platform
           SUFFIX=""
@@ -520,7 +540,7 @@ jobs:
 
       # 伪官方格式的随机后缀（仅在 SUFFIX 未设置时生效）*
       - name: Custom Kernel Random Suffix if empty
-        if: ${{ github.event.inputs.SUFFIX == '' }}
+        if: ${{ env.SUFFIX == '' }}
         run: |
           cd kernel_workspace/kernel_platform
           FAST_BUILD="true"
@@ -609,7 +629,7 @@ jobs:
           fi
 
       - name: Apply Fake Patches
-        if: ${{ github.event.inputs.SUSFS_META != '-1' }}
+        if: ${{ env.SUSFS_META != '-1' }}
         run: |
           kotlin "$GITHUB_WORKSPACE/kernel_workspace/Action-Build/scripts/PatchFakePatches.kts" apply "$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/common"
 
@@ -620,7 +640,7 @@ jobs:
           cd kernel_workspace
           if [ "" != "-1" ]; then
             SUSFS_META=""
-            git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.KANDROID_VERSION }}-${{ env.KERNEL_VERSION }}${{ github.event.inputs.SUSFS_DEV == 'true' && '-dev' || '' }}
+            git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.KANDROID_VERSION }}-${{ env.KERNEL_VERSION }}${{ env.SUSFS_DEV == 'true' && '-dev' || '' }}
             cd susfs4ksu
             if [ -n "$SUSFS_META" ]; then
               if [[ "$SUSFS_META" =~ ^[0-9]+$ ]]; then
@@ -674,14 +694,14 @@ jobs:
           check_rejects .
 
       - name: Revert and Postfix Fake Patches
-        if: ${{ github.event.inputs.SUSFS_META != '-1' }}
+        if: ${{ env.SUSFS_META != '-1' }}
         run: |
           kotlin "$GITHUB_WORKSPACE/kernel_workspace/Action-Build/scripts/PatchFakePatches.kts" postfix "$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/common"
           kotlin "$GITHUB_WORKSPACE/kernel_workspace/Action-Build/scripts/PatchFakePatches.kts" revert "$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/common"
 
       # OGKI转换GKI，无需修改 dtbo 开机
       - name: Apply Convert HMBIRD_OGKI to HMBIRD_GKI
-        if: ${{ (fromJSON(env.VERSIONLEVEL) > 6 || (fromJSON(env.VERSIONLEVEL) == 6 && fromJSON(env.PATCHLEVEL) >= 6)) && github.event.inputs.SCHED_HMBIRD == 'false' }}
+        if: ${{ (fromJSON(env.VERSIONLEVEL) > 6 || (fromJSON(env.VERSIONLEVEL) == 6 && fromJSON(env.PATCHLEVEL) >= 6)) && env.SCHED_HMBIRD == 'false' }}
         run: |
           PATCH_DIR="${GITHUB_WORKSPACE}/kernel_workspace/Action-Build/patches"
           cd kernel_workspace/kernel_platform/common
@@ -699,7 +719,7 @@ jobs:
           check_rejects .
 
       - name: Apply BBRv3
-        if: ${{ github.event.inputs.CCM == 'true' && env.KMI != 'android16-6.12' }}
+        if: ${{ env.CCM == 'true' && env.KMI != 'android16-6.12' }}
         run: |
           PATCH_DIR="${GITHUB_WORKSPACE}/kernel_workspace/Action-Build/patches"
           cd kernel_workspace/kernel_platform/common
@@ -714,7 +734,7 @@ jobs:
           check_rejects .
 
       - name: Apply UNICODE_BYPASS
-        if: ${{ github.event.inputs.UNICODE_BYPASS == 'true' }}
+        if: ${{ env.UNICODE_BYPASS == 'true' }}
         run: |
           PATCH_DIR="${GITHUB_WORKSPACE}/kernel_workspace/Action-Build/patches"
           cd kernel_workspace/kernel_platform/common
@@ -727,7 +747,7 @@ jobs:
           check_rejects .
 
       - name: Apply RE_KERNEL
-        if: ${{ github.event.inputs.RE_KERNEL == 'true' }}
+        if: ${{ env.RE_KERNEL == 'true' }}
         run: |
           RE_DIR="${GITHUB_WORKSPACE}/kernel_workspace/Re-Kernel/LKM-Source"
           cd kernel_workspace/kernel_platform/common
@@ -742,7 +762,7 @@ jobs:
       - name: Apply DROID_SPACES
         env:
           FILE: ${{ matrix.file }}
-        if: ${{ github.event.inputs.DROID_SPACES == 'true' }}
+        if: ${{ env.DROID_SPACES == 'true' }}
         run: |
           PATCH_DIR="${GITHUB_WORKSPACE}/kernel_workspace/Action-Build/patches"
           cd kernel_workspace/kernel_platform/common
@@ -798,7 +818,7 @@ jobs:
           check_rejects .
 
       - name: Apply LZ4_DEV
-        if: ${{ github.event.inputs.LZ4_UPDATE == 'true' }}
+        if: ${{ env.LZ4_UPDATE == 'true' }}
         run: |
           set -euo pipefail
           LZ4_REPO="${GITHUB_WORKSPACE}/kernel_workspace/lz4_oplus"
@@ -806,7 +826,7 @@ jobs:
           . "${LZ4_REPO}/apply_lz4_oplus.sh"
 
       - name: Apply ZRAM
-        if: startsWith(github.event.inputs.ZRAM, '1/')
+        if: startsWith(env.ZRAM, '1/')
         run: |
           ZRAM="0/lz4kd/8589934592"
           if [[ "$(grep -o '/' <<< "$ZRAM" | wc -l)" -lt 2 ]]; then
@@ -836,7 +856,7 @@ jobs:
       - name: Apply SCHED_HMBIRD
         env:
           FILE: ${{ matrix.file }}
-        if: ${{ github.event.inputs.SCHED_HMBIRD == 'true' }}
+        if: ${{ env.SCHED_HMBIRD == 'true' }}
         run: |
           cd kernel_workspace/kernel_platform/common
           CLEAN_FILE="${FILE//_bak/}"
@@ -862,7 +882,7 @@ jobs:
           fi
 
       - name: Apply LSM_BBG
-        if: ${{ github.event.inputs.LSM_BBG == 'true' }}
+        if: ${{ env.LSM_BBG == 'true' }}
         run: |
           cd kernel_workspace/kernel_platform/common
           echo "正在启用内核级基带保护支持…"
@@ -1055,7 +1075,7 @@ jobs:
 
       # Custom kernel build time, without adding #1 SMP PREEMPT 自定义内核构建时间，不要加入#1 SMP PREEMPT
       - name: Custom BUILD_TIME
-        if: ${{ github.event.inputs.BUILD_TIME != '-1' }}
+        if: ${{ env.BUILD_TIME != '-1' }}
         shell: bash
         run: |
           INPUT_TIME="Thu Apr 2 08:08:53 UTC 2026"
@@ -1087,7 +1107,7 @@ jobs:
           sed -i '/obj-y.*gpueb/d' kernel_workspace/kernel-5.10/drivers/gpu/mediatek/Makefile
 
       - name: Build Kernel FAST
-        if: ${{ github.event.inputs.FAST_BUILD == 'true' }}
+        if: ${{ env.FAST_BUILD == 'true' }}
         id: fast_build
         run: |
           cd kernel_workspace/kernel_platform
@@ -1290,7 +1310,7 @@ jobs:
           ccache -s
 
       - name: Fallback to Build Kernel
-        if: ${{ github.event.inputs.FAST_BUILD == 'false' || steps.fast_build.outputs.fallback == 'true' }}
+        if: ${{ env.FAST_BUILD == 'false' || steps.fast_build.outputs.fallback == 'true' }}
         run: |
           cd kernel_workspace
           if [ -f ./kernel_platform/build_with_bazel.py ]; then
@@ -1330,7 +1350,7 @@ jobs:
           fi
 
       - name: Apply KPX and Replace Image
-        if: ${{ github.event.inputs.KPM != 'N/A' }}
+        if: ${{ env.KPM != 'N/A' }}
         run: |
           KPM_DIR="${GITHUB_WORKSPACE}/kernel_workspace/SukiSU_patch/kpm"
           # KPM_DIR="${GITHUB_WORKSPACE}/kernel_workspace/Action-Build/patches/kpm"
@@ -1350,7 +1370,7 @@ jobs:
           cp Image "${GITHUB_WORKSPACE}/AnyKernel3/Image"
 
       - name: Download Latest SUSFS Module from CI
-        if: ${{ github.event.inputs.SUSFS_CI == 'CI' && github.event.inputs.SUSFS_META != '-1' }}
+        if: ${{ env.SUSFS_CI == 'CI' && env.SUSFS_META != '-1' }}
         continue-on-error: true
         run: |
           LATEST_RUN_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
@@ -1370,7 +1390,7 @@ jobs:
           fi
 
       - name: Download Latest SUSFS Module from Release
-        if: ${{ github.event.inputs.SUSFS_CI == 'Release' && github.event.inputs.SUSFS_META != '-1' }}
+        if: ${{ env.SUSFS_CI == 'Release' && env.SUSFS_META != '-1' }}
         continue-on-error: true
         run: |
           wget -O ksu_module_susfs_1.5.2+_Release.zip https://github.com/sidex15/ksu_module_susfs/releases/latest/download/ksu_module_susfs_1.5.2+.zip
@@ -1411,7 +1431,7 @@ jobs:
       - name: Set zip Suffix
         id: suffix
         run: |
-          echo "value=${{ env.ZRAM_ALGO_U && format('_{0}', env.ZRAM_ALGO_U) || '' }}${{ github.event.inputs.KPM == 'KPM' && '_KPM' || github.event.inputs.KPM == 'KPN' && '_KPN' || '' }}${{ github.event.inputs.LSM_BBG == 'true' && '_BBG' || '' }}_ILH${{ github.event.inputs.SCHED_HMBIRD== 'true' && '_HMBIRD' || '' }}${{ github.event.inputs.DROID_SPACES== 'true' && '_DS' || '' }}${{ github.event.inputs.RE_KERNEL == 'true' && '_REKER' || '' }}${{ github.event.inputs.LZ4_UPDATE == 'true' && '_LZ4UPD' || '' }}" >> $GITHUB_OUTPUT
+          echo "value=${{ env.ZRAM_ALGO_U && format('_{0}', env.ZRAM_ALGO_U) || '' }}${{ env.KPM == 'KPM' && '_KPM' || env.KPM == 'KPN' && '_KPN' || '' }}${{ env.LSM_BBG == 'true' && '_BBG' || '' }}_ILH${{ env.SCHED_HMBIRD== 'true' && '_HMBIRD' || '' }}${{ env.DROID_SPACES== 'true' && '_DS' || '' }}${{ env.RE_KERNEL == 'true' && '_REKER' || '' }}${{ env.LZ4_UPDATE == 'true' && '_LZ4UPD' || '' }}" >> $GITHUB_OUTPUT
 
       - name: Upload AnyKernel3
         uses: actions/upload-artifact@v7
@@ -1420,7 +1440,7 @@ jobs:
           path: ./AnyKernel3/*
 
       - name: Extract and Process ZRAM Module
-        if: startsWith(github.event.inputs.ZRAM, '1/')
+        if: startsWith(env.ZRAM, '1/')
         id: zram_find
         run: |
           set -e
@@ -1473,14 +1493,14 @@ jobs:
           fi
 
       - name: Upload ZRAM Module
-        if: startsWith(github.event.inputs.ZRAM, '1/') && steps.zram_find.outputs.upload != 'false'
+        if: startsWith(env.ZRAM, '1/') && steps.zram_find.outputs.upload != 'false'
         uses: actions/upload-artifact@v7
         with:
           name: ZRAM-Module_${{ env.KERNEL_VERSION }}_${{ steps.extract_info.outputs.value }}
           path: ZRAM-Module/*
 
       - name: Check Cache Size Before Save
-        if: ${{ github.event.inputs.BUILD_NOCACHE == 'false' }}
+        if: ${{ env.BUILD_NOCACHE == 'false' }}
         id: cache_size_check
         run: |
           check_size() {
@@ -1503,14 +1523,14 @@ jobs:
           check_size "${{ github.workspace }}/kernel_workspace/.thinlto-cache" "thinlto"
 
       - name: Save Ccache
-        if: ${{ github.event.inputs.BUILD_NOCACHE == 'false' && steps.cache_size_check.outputs.ccache_save == 'true' && steps.restore-ccache.outputs.cache-hit != 'true' }}
+        if: ${{ env.BUILD_NOCACHE == 'false' && steps.cache_size_check.outputs.ccache_save == 'true' && steps.restore-ccache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v5
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ runner.os }}-${{ github.ref_name }}-${{ matrix.file }}-${{ env.BUILD_METHOD }}-${{ github.event.inputs.FAST_BUILD == 'true' && 'alpha' || 'beta' }}-17.0
+          key: ccache-${{ runner.os }}-${{ github.ref_name }}-${{ matrix.file }}-${{ env.BUILD_METHOD }}-${{ env.FAST_BUILD == 'true' && 'alpha' || 'beta' }}-17.0
 
       - name: Save ThinLTO Cache
-        if: ${{ github.event.inputs.BUILD_NOCACHE == 'false' && github.event.inputs.FAST_BUILD == 'true' && steps.cache_size_check.outputs.thinlto_save == 'true' && steps.restore-thinlto.outputs.cache-hit != 'true' }}
+        if: ${{ env.BUILD_NOCACHE == 'false' && env.FAST_BUILD == 'true' && steps.cache_size_check.outputs.thinlto_save == 'true' && steps.restore-thinlto.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v5
         with:
           path: ${{ github.workspace }}/kernel_workspace/.thinlto-cache
