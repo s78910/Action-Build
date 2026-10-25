@@ -27,45 +27,13 @@ jobs:
       matrix:
         include:
           # --- 6.1 高通 SM8650 系列 (A15 & A16 双版本) ---
-          - device: OnePlus12
-            android_ver: Android15
-            kernel_ver: '6.1'
-            sub_ver: '118'
-            repo: cctv18/android_kernel_common_oneplus_sm8650
-            branch: oneplus/sm8650_v_15.0.0_oneplus12_6.1.118
-            toolchain: LLVM-Clang20-r547379
-            clang_pkg: clang-r547379.zip
-            susfs_branch: oki-android14-6.1
-            chip: SM8650
-
-          - device: OnePlus12
-            android_ver: Android16
-            kernel_ver: '6.1'
-            sub_ver: '141'
-            repo: cctv18/android_kernel_common_oneplus_sm8650
-            branch: oneplus/sm8650_b_16.0.0_oneplus12_6.1.141
-            toolchain: LLVM-Clang20-r547379
-            clang_pkg: clang-r547379.zip
-            susfs_branch: oki-android14-6.1
-            chip: SM8650
-
+          # --- 6.1 高通 SM8650 系列 (待补齐 A15 独立包) ---
           - device: OnePlusAce3Pro
             android_ver: Android15
             kernel_ver: '6.1'
             sub_ver: '118'
             repo: cctv18/android_kernel_common_oneplus_sm8650
             branch: oneplus/sm8650_v_15.0.0_ace_3_pro
-            toolchain: LLVM-Clang20-r547379
-            clang_pkg: clang-r547379.zip
-            susfs_branch: oki-android14-6.1
-            chip: SM8650
-
-          - device: OnePlusAce3Pro
-            android_ver: Android16
-            kernel_ver: '6.1'
-            sub_ver: '141'
-            repo: cctv18/android_kernel_common_oneplus_sm8650
-            branch: oneplus/sm8650_b_16.0.0_oneplus12_6.1.141
             toolchain: LLVM-Clang20-r547379
             clang_pkg: clang-r547379.zip
             susfs_branch: oki-android14-6.1
@@ -81,61 +49,6 @@ jobs:
             clang_pkg: clang-r547379.zip
             susfs_branch: oki-android14-6.1
             chip: SM8650
-
-          - device: OnePlusAce5
-            android_ver: Android16
-            kernel_ver: '6.1'
-            sub_ver: '141'
-            repo: cctv18/android_kernel_common_oneplus_sm8650
-            branch: oneplus/sm8650_b_16.0.0_oneplus12_6.1.141
-            toolchain: LLVM-Clang20-r547379
-            clang_pkg: clang-r547379.zip
-            susfs_branch: oki-android14-6.1
-            chip: SM8650
-
-          # --- 6.1 天玑 MT6989 / 9300 系列 (A15 & A16 双版本) ---
-          - device: OnePlusAce5Race
-            android_ver: Android15
-            kernel_ver: '6.1'
-            sub_ver: 'mt6989'
-            repo: cctv18/android_kernel_oneplus_mt6989
-            branch: oneplus/mt6989_v_15.0.2_ace5_race
-            toolchain: LLVM-Clang18-r510928
-            clang_pkg: clang-r510928.zip
-            susfs_branch: oki-android14-6.1
-            chip: MT6989
-
-          - device: OnePlusAce5Race
-            android_ver: Android16
-            kernel_ver: '6.1'
-            sub_ver: 'mt6989'
-            repo: cctv18/android_kernel_oneplus_mt6989
-            branch: oneplus/mt6989_b_16.0.0_ace5_race
-            toolchain: LLVM-Clang18-r510928
-            clang_pkg: clang-r510928.zip
-            susfs_branch: oki-android14-6.1
-            chip: MT6989
-
-          # --- 6.6 高通 SM8750 系列 (已完成机型暂时注销以加速并发，其余待编) ---
-          # - device: OnePlus13 (已完成出包)
-          # - device: OnePlus13 (已完成出包)
-
-          - device: OnePlusAce5Pro
-            android_ver: Android15
-            kernel_ver: '6.6'
-            sub_ver: '66'
-            repo: cctv18/android_kernel_common_oneplus_sm8750
-            branch: oneplus/sm8750_v_15.0.0_oneplus_ace5_pro
-            toolchain: LLVM-Clang18-r510928
-            clang_pkg: clang-r510928.zip
-            susfs_branch: oki-android15-6.6
-            chip: SM8750
-
-          # - device: OnePlusAce5Pro (已完成出包)
-          # - device: OnePlusAce6 (已完成出包)
-          # --- 6.6 天玑 MT6991 / 9400 系列 (已完成出包) ---
-          # - device: OnePlusAce5Ultra (已完成出包)
-          # - device: OnePlusAce5Ultra (已完成出包)
 
           # --- 6.12 高通 SM8845 系列 (一加 Ace 6T) ---
           - device: OnePlusAce6T
