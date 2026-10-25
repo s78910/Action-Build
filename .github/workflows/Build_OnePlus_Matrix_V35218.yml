@@ -3,10 +3,15 @@ run-name: OnePlus Multi-Matrix Build (v35218)
 on:
   workflow_dispatch:
     inputs:
-      TARGET:
-        description: "Matrix Batch Trigger"
-        required: false
-        default: "ALL"
+      KPM:
+        description: "内核模块挂钩模式 (N/A: 纯内置无KPN/KPM)"
+        type: choice
+        required: true
+        default: "N/A"
+        options:
+          - "N/A"
+          - "KPN"
+          - "KPM"
 jobs:
   build:
     strategy:
@@ -73,7 +78,7 @@ jobs:
       CCACHE_MAXSIZE: 5G
       FAST_BUILD: "true"
       UNICODE_BYPASS: "true"
-      KPM: "KPN"
+      KPM: ${{ github.event.inputs.KPM || 'N/A' }}
       SUSFS_CI: "Release"
       SUSFS_META: ""
       SUSFS_DEV: "false"
@@ -263,7 +268,7 @@ jobs:
           if [ "2.3.0" != "N/A" ]; then
             echo "::warning title=SUSFS Not Required::当前管理器已自带附加模块，无需启用 SUSFS 模块，强制启用可能导致不开机。"
           fi
-          echo "Selected KPM: KPN"
+          echo "Selected KPM: ${{ env.KPM }}"
           echo "Custom SUSFS_META: "
           echo "Custom KSU_META: main/main//373303c525d05c8b47801305f506ef9124dbd6e6"
           echo "Selected ZRAM: 0/lz4kd/8589934592"
@@ -967,10 +972,9 @@ jobs:
           fi
 
           # KPM配置
-          if [ "KPN" = "KPM" ] || [ "KPN" = "N/A" ]; then
+          if [ "${{ env.KPM }}" = "KPM" ]; then
             set_config "CONFIG_KPM=y"
-          fi
-          if [ "KPN" = "KPN" ]; then
+          else
             set_config "CONFIG_KPM=n"
           fi
 
@@ -1382,7 +1386,7 @@ jobs:
           KPN_DIR="${GITHUB_WORKSPACE}/kernel_workspace/Action-Build/patches/kpn"
           OUT_DIR="${GITHUB_WORKSPACE}/kernel_workspace/kernel_platform/out/Final-Image-Find"
           cd "${OUT_DIR}"
-          if [ "KPN" = "KPM" ]; then
+          if [ "${{ env.KPM }}" = "KPM" ]; then
             cp "${KPM_DIR}/patch_linux" .
             chmod +x patch_linux
             ./patch_linux
@@ -1390,8 +1394,8 @@ jobs:
             cp "${KPN_DIR}/kptools-linux" "${KPN_DIR}/kpimg-linux" .
             chmod +x ./kptools-linux
             ./kptools-linux -p -i ./Image -k ./kpimg-linux -o ./oImage
+            mv -f oImage Image
           fi
-          mv -f oImage Image
           cp Image "${GITHUB_WORKSPACE}/AnyKernel3/Image"
 
       - name: Download Latest SUSFS Module from CI
@@ -1456,7 +1460,7 @@ jobs:
       - name: Set zip Suffix
         id: suffix
         run: |
-          echo "value=${{ env.ZRAM_ALGO_U && format('_{0}', env.ZRAM_ALGO_U) || '' }}${{ env.KPM == 'KPM' && '_KPM' || env.KPM == 'KPN' && '_KPN' || '' }}${{ env.LSM_BBG == 'true' && '_BBG' || '' }}_ILH${{ env.SCHED_HMBIRD== 'true' && '_HMBIRD' || '' }}${{ env.DROID_SPACES== 'true' && '_DS' || '' }}${{ env.RE_KERNEL == 'true' && '_REKER' || '' }}${{ env.LZ4_UPDATE == 'true' && '_LZ4UPD' || '' }}" >> $GITHUB_OUTPUT
+          echo "value=${{ env.ZRAM_ALGO_U && format('_{0}', env.ZRAM_ALGO_U) || '' }}${{ env.KPM == 'KPM' && '_KPM' || env.KPM == 'KPN' && '_KPN' || '' }}${{ env.LSM_BBG == 'true' && '_BBG' || '' }}${{ env.KPM != 'N/A' && '_ILH' || '' }}${{ env.SCHED_HMBIRD== 'true' && '_HMBIRD' || '' }}${{ env.DROID_SPACES== 'true' && '_DS' || '' }}${{ env.RE_KERNEL == 'true' && '_REKER' || '' }}${{ env.LZ4_UPDATE == 'true' && '_LZ4UPD' || '' }}" >> $GITHUB_OUTPUT
 
       - name: Upload AnyKernel3
         uses: actions/upload-artifact@v7
